@@ -1,8 +1,8 @@
 <template>
     <div class="head">
-        
-        <el-input placeholder="搜索部门信息">
-            <template #append><el-button icon="Search"></el-button></template>
+
+        <el-input placeholder="输入部门名以便搜索" v-model="searchKey">
+            <template #append><el-button icon="Search" @click="search"></el-button></template>
         </el-input>
         <el-table :data="departments" style="width: 100%">
             <el-table-column fixed prop="id" label="部门编号" width="150" />
@@ -27,39 +27,40 @@
 
     </div>
 
-    <el-dialog v-model="DialogVisible" title="添加部门" width="50%" center>
+    <el-dialog v-model="DialogVisible" title="查询的部门信息" width="50%" center>
         <el-form :model="department">
+            <el-form-item label="部门编号" :label-width="formLabelWidth">
+                <el-input v-model="department.id" autocomplete="off" disabled />
+            </el-form-item>
             <el-form-item label="部门名" :label-width="formLabelWidth">
-                <el-input v-model="department.departName" autocomplete="off" />
+                <el-input v-model="department.departName" autocomplete="off" disabled />
             </el-form-item>
             <el-form-item label="部门英文名" :label-width="formLabelWidth">
-                <el-input v-model="department.departCode" autocomplete="off" />
+                <el-input v-model="department.departCode" autocomplete="off" disabled />
             </el-form-item>
             <el-form-item label="部门描述" :label-width="formLabelWidth">
-                <el-input v-model="department.departDesc" autocomplete="off" />
+                <el-input v-model="department.departDesc" autocomplete="off" disabled />
             </el-form-item>
             <el-form-item label="部门类别" :label-width="formLabelWidth">
-                <el-input v-model="department.departType" autocomplete="off" />
+                <el-input v-model="department.departType" autocomplete="off" disabled />
             </el-form-item>
             <el-form-item label="学校id" :label-width="formLabelWidth">
-                <el-input v-model="department.schoolId" autocomplete="off" />
+                <el-input v-model="department.schoolId" autocomplete="off" disabled />
             </el-form-item>
             <el-form-item label="创建时间" :label-width="formLabelWidth">
-                <el-input v-model="department.createTime" autocomplete="off" />
+                <el-input v-model="department.createTime" autocomplete="off" disabled />
             </el-form-item>
             <el-form-item label="更新时间" :label-width="formLabelWidth">
-                <el-input v-model="department.updateTime" autocomplete="off" />
+                <el-input v-model="department.updateTime" autocomplete="off" disabled />
             </el-form-item>
             <el-form-item label="是否弃用" :label-width="formLabelWidth">
-                <el-input v-model="department.deleted" autocomplete="off" />
+                <el-input v-model="department.deleted" autocomplete="off" disabled />
             </el-form-item>
         </el-form>
         <template #footer>
             <span class="dialog-footer">
-                <el-button @click="DialogVisible = false">取消</el-button>
-                <el-button type="primary" @click="confirmAdd">
-                    确认
-                </el-button>
+                <el-button @click="DialogVisible = false">关闭</el-button>
+
             </span>
         </template>
     </el-dialog>
@@ -103,7 +104,7 @@
 
 <script>
 import { defineComponent } from "vue"
-import { getDepartment, getDepartments, addDepartment, editDepartment, deleteDepartment, checkDepartment } from "@/http/index"//在http的文件夹里index.js 是相对应的
+import { getDepartment, getDepartments, editDepartment, deleteDepartment, checkDepartment } from "@/http/index"//在http的文件夹里index.js 是相对应的
 import { cloneDeep } from 'lodash-es'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -129,27 +130,40 @@ export default defineComponent({
             },
             DialogVisible: false,
             EditDialogVisible: false,
-            admin:false
+            admin: false,
+            searchKey: ''
         };
     },
     mounted() {
         //this.tested()
         //this.adds()
         this.getall();
-        if(JSON.parse(localStorage.getItem('admin'))){
-            this.admin=JSON.parse(localStorage.getItem('admin'))
-        }else{
-            this.admin=false;
+        if (JSON.parse(localStorage.getItem('admin'))) {
+            this.admin = JSON.parse(localStorage.getItem('admin'))
+        } else {
+            this.admin = false;
         }
     },
     methods: {
+        search() {
+            checkDepartment(this.searchKey).then(res => {
+                if (res.success) {
+                    ElMessage('查找成功')
+                    this.department=res.data.department
+                    this.DialogVisible = true
+                }
+
+            }).catch(err => {
+                ElMessage(err.msg)
+            })
+        },
         //不用康
         tested() {
             console.log("2#A211".slice(3, 6));
             const a = "2#A211".split("");
             console.log(parseInt("2") + 1);
         },
-        
+
         //排序 不用看
         dsort(dormitorys) {
             for (var i = 0; i < dormitorys.length; i++) {
@@ -182,7 +196,7 @@ export default defineComponent({
             });
         },
         //添加记录 在第3行
-        
+
         edit(department) {
             //console.log(dormitory)
             this.EditDialogVisible = true;
@@ -206,7 +220,7 @@ export default defineComponent({
                 ElMessage("网络错误联系管理员");
             });
         },
-        //删除 del在19行被调用了，如果你要改名记得一起改
+
         del(id) {
             console.log(id);
             const params = {
@@ -218,52 +232,34 @@ export default defineComponent({
                 type: "warning",
             })
                 .then(() => {
-                ElMessage({
-                    type: "success",
-                    message: "删除成功",
-                }),
-                    //下面这个deleteDormitory要改名的话 代码第116行也得改，改成一样的
-                    deleteDepartment(params).then(res => {
-                        if (res.success) {
-                            this.getall(); //这个函数在176行 改名记得一起
-                        }
-                        else {
-                            console.log(res.msg);
-                            return false;
-                        }
-                    }).catch(err => {
-                        console.log(err);
-                    });
-            })
+                    ElMessage({
+                        type: "success",
+                        message: "删除成功",
+                    }),
+                        //下面这个deleteDormitory要改名的话 代码第116行也得改，改成一样的
+                        deleteDepartment(params).then(res => {
+                            if (res.success) {
+                                this.getall(); //这个函数在176行 改名记得一起
+                            }
+                            else {
+                                console.log(res.msg);
+                                return false;
+                            }
+                        }).catch(err => {
+                            console.log(err);
+                        });
+                })
                 .catch(() => {
-                ElMessage({
-                    type: "info",
-                    message: "在考虑一下",
+                    ElMessage({
+                        type: "info",
+                        message: "在考虑一下",
+                    });
                 });
-            });
         },
-        //删除所有记录  这个不用管
-        delall() {
-            //console.log(this.dormitorys.length)
-            for (let i = 1; i <= this.pageinfo.totalpage; i++) {
-                let params = {
-                    id: i
-                };
-                deleteDormitory(params).then(res => {
-                    if (res.success) {
-                        this.getdormitorys();
-                    }
-                    else {
-                        console.log(res.msg);
-                        return false;
-                    }
-                }).catch(err => {
-                    console.log(err);
-                });
-            }
-        }
+
+
     },
-    
+
 });
 </script>
 

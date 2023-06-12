@@ -1,6 +1,8 @@
 <template>
     <div class="head">
-        
+        <el-input placeholder="输入教师编号以便搜索" v-model="searchKey">
+            <template #append><el-button icon="Search" @click="search"></el-button></template>
+        </el-input>
         <el-table :data="teachers" style="width: 100%">
             <el-table-column fixed prop="id" label="教师id" width="150" />
             <el-table-column prop="userId" label="教师编号" width="120" />
@@ -24,7 +26,7 @@
 
     </div>
 
-    <el-dialog v-model="DialogVisible" title="添加学校" width="50%" center>
+    <el-dialog v-model="DialogVisible" title="查询教师结果" width="50%" center>
         <el-form :model="teacher">
             <el-form-item label="教师编号" :label-width="formLabelWidth">
                 <el-input v-model="teacher.userId" autocomplete="off" />
@@ -53,10 +55,8 @@
         </el-form>
         <template #footer>
             <span class="dialog-footer">
-                <el-button @click="DialogVisible = false">取消</el-button>
-                <el-button type="primary" @click="confirmAdd">
-                    确认
-                </el-button>
+                <el-button @click="DialogVisible = false">关闭</el-button>
+                
             </span>
         </template>
     </el-dialog>
@@ -125,7 +125,8 @@ export default defineComponent({
             },
             DialogVisible: false,
             EditDialogVisible: false,
-            admin:false
+            admin:false,
+            searchKey: ''
         }
     },
     mounted() {
@@ -140,6 +141,18 @@ export default defineComponent({
 
     },
     methods: {
+        search() {
+            getTeacher(this.searchKey).then(res => {
+                if (res.success) {
+                    ElMessage('查找成功')
+                    this.teacher=res.data.teacher
+                    this.DialogVisible = true
+                }
+
+            }).catch(err => {
+                ElMessage(err.msg)
+            })
+        },
         //不用康
         tested() {
             console.log("2#A211".slice(3, 6))

@@ -1,6 +1,8 @@
 <template>
     <div class="head">
-        
+        <el-input placeholder="输入学校编号以便搜索" v-model="searchKey">
+            <template #append><el-button icon="Search" @click="search"></el-button></template>
+        </el-input>
         <el-table :data="schools" style="width: 100%">
             <el-table-column fixed prop="id" label="学校编号" width="150" />
             <el-table-column prop="province" label="省份" width="120" />
@@ -27,8 +29,56 @@
             @current-change="pageChange" />
 
     </div>
+    <el-dialog v-model="DialogVisible" title="查询学校结果" width="50%" center>
+        <el-form :model="school">
+            <el-form-item label="学校编号" :label-width="formLabelWidth">
+                <el-input v-model="school.id" autocomplete="off" />
+            </el-form-item>
+            <el-form-item label="省份" :label-width="formLabelWidth">
+                <el-input v-model="school.province" autocomplete="off" />
+            </el-form-item>
+            <el-form-item label="市区" :label-width="formLabelWidth">
+                <el-input v-model="school.city" autocomplete="off" />
+            </el-form-item>
+            <el-form-item label="县区" :label-width="formLabelWidth">
+                <el-input v-model="school.area" autocomplete="off" />
+            </el-form-item>
+            <el-form-item label="学校名" :label-width="formLabelWidth">
+                <el-input v-model="school.schoolName" autocomplete="off" />
+            </el-form-item>
+            <el-form-item label="纬度" :label-width="formLabelWidth">
+                <el-input v-model="school.latitude" autocomplete="off" />
+            </el-form-item>
+            <el-form-item label="经度" :label-width="formLabelWidth">
+                <el-input v-model="school.longitude" autocomplete="off" />
+            </el-form-item>
+            <el-form-item label="是否启用" :label-width="formLabelWidth">
+                <el-input v-model="school.enable" autocomplete="off" />
+            </el-form-item>
+            <el-form-item label="学校描述" :label-width="formLabelWidth">
+                <el-input v-model="school.description" autocomplete="off" />
+            </el-form-item>
+            <el-form-item label="学校地址" :label-width="formLabelWidth">
+                <el-input v-model="school.address" autocomplete="off" />
+            </el-form-item>
+            <el-form-item label="创建时间" :label-width="formLabelWidth">
+                <el-input v-model="school.createTime" autocomplete="off" />
+            </el-form-item>
+            <el-form-item label="更新时间" :label-width="formLabelWidth">
+                <el-input v-model="school.updateTime" autocomplete="off" />
+            </el-form-item>
+            <el-form-item label="是否弃用" :label-width="formLabelWidth">
+                <el-input v-model="school.deleted" autocomplete="off" />
+            </el-form-item>
+        </el-form>
+        <template #footer>
+            <span class="dialog-footer">
+                <el-button @click="DialogVisible = false">关闭</el-button>
 
-    
+            </span>
+        </template>
+    </el-dialog>
+
     <el-dialog v-model="EditDialogVisible" title="修改学校信息" width="50%" center>
         <el-form :model="school">
             <el-form-item label="省份" :label-width="formLabelWidth">
@@ -78,7 +128,7 @@
         </template>
     </el-dialog>
     <el-dialog title="位置显示" v-model="openMap" width="600px" @open="baidumap">
-         <el-input v-model="addressInfo.address" disabled>
+        <el-input v-model="addressInfo.address" disabled>
             <template #prepend>当前位置：</template>
         </el-input>
         <div id="bdmap" style="width: 100%; height: 400px;"></div>
@@ -87,14 +137,14 @@
 
 <script>
 import { defineComponent } from "vue"
-import { getSchool,getSchools,editSchool,deleteSchool,checkSchool } from "@/http/index"//在http的文件夹里index.js 是相对应的
+import { getSchool, getSchools, editSchool, deleteSchool, checkSchool } from "@/http/index"//在http的文件夹里index.js 是相对应的
 import { cloneDeep } from 'lodash-es'
 import { ElMessage, ElMessageBox } from 'element-plus';
 
 export default defineComponent({
     data() {
         return {
-            openMap:false,
+            openMap: false,
             schools: [],//自己取
             pageinfo: {
                 "currentPage": 1,
@@ -127,27 +177,40 @@ export default defineComponent({
             },
             DialogVisible: false,
             EditDialogVisible: false,
-            admin:false
+            admin: false,
+            searchKey: ""
         }
     },
     mounted() {
         //this.tested()
         //this.adds()
         this.getall()
-        
+
         //this.stores()
-        if(JSON.parse(localStorage.getItem('admin'))){
-            this.admin=JSON.parse(localStorage.getItem('admin'))
-        }else{
-            this.admin=false;
+        if (JSON.parse(localStorage.getItem('admin'))) {
+            this.admin = JSON.parse(localStorage.getItem('admin'))
+        } else {
+            this.admin = false;
         }
-        
+
 
     },
-    
+
     methods: {
-        getroot(){
-            
+        search() {
+            getSchool(this.searchKey).then(res => {
+                if (res.success) {
+                    ElMessage('查找成功')
+                    this.school = res.data.school
+                    this.DialogVisible = true
+                }
+
+            }).catch(err => {
+                ElMessage(err.msg)
+            })
+        },
+        getroot() {
+
         },
         baidumap() {
             let that = this;
@@ -155,21 +218,21 @@ export default defineComponent({
                 coordsType: 5 // coordsType指定输入输出的坐标类型，3为gcj02坐标，5为bd0ll坐标，默认为5。
                 // 指定完成后API将以指定的坐标类型处理您传入的坐标
             });          // 创建地图实例  
-            var point = new BMap.Point(that.addressInfo.longitude,that.addressInfo.latitude);  // 创建点坐标  
+            var point = new BMap.Point(that.addressInfo.longitude, that.addressInfo.latitude);  // 创建点坐标  
             map.centerAndZoom(point, 15);
             map.enableScrollWheelZoom(true);
             var marker = new BMap.Marker(point);        // 创建标注    
             map.addOverlay(marker);
         },
-        openmap(sc){
-            this.addressInfo.longitude=sc.longitude;
-            this.addressInfo.latitude=sc.latitude;
-            this.addressInfo.address=sc.address;
-            this.openMap=true;
-            
+        openmap(sc) {
+            this.addressInfo.longitude = sc.longitude;
+            this.addressInfo.latitude = sc.latitude;
+            this.addressInfo.address = sc.address;
+            this.openMap = true;
+
         },
-        stores(){
-            let i=JSON.parse(localStorage.getItem('userinfo'))
+        stores() {
+            let i = JSON.parse(localStorage.getItem('userinfo'))
             console.log(i.token)
         },
         //不用康
@@ -211,9 +274,9 @@ export default defineComponent({
                 if (res.success) {
                     this.schools = res.data.schools.slice(start, end);//去浏览器的控制台看名字 我发的视频里也有
                     this.pageinfo.totalpage = res.data.schools.length;
-                    
+
                 } else {
-                    
+
                     return false
                 }
 
@@ -228,14 +291,14 @@ export default defineComponent({
         //添加记录 在第3行
         add() {
             //除了第211行，其他的够可以删了202到210行
-            
+
             this.DialogVisible = true
         },
         //第64行 改名记得一起改
         confirmAdd() {
 
             const one = this.school;//第128行 记得改，等号左边的随便取，改了的话下面一行也得改，里面的参数
-           
+
             addSchool(one).then(res => {//第116行 记得一起改 
                 this.getall()//174行 记得改
                 //console.log(res);
@@ -245,7 +308,7 @@ export default defineComponent({
             this.DialogVisible = false
         },
         //下面这个不用看 要删掉也可以
-        
+
         //修改 这个在18行，要改名记得看一下，edit()括号里的参数名随便取
         edit(school) {
             //console.log(dormitory)
